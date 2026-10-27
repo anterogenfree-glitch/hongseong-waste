@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c1113" media="(prefers-color-scheme: dark)">
+<meta name="description" content="홍성군 대형폐기물 배출 도우미 — 사진 한 장으로 수수료 스티커 품목 또는 빼기 앱 분류 항목을 안내합니다.">
+<title>홍성군 대형폐기물 도우미</title>
+<link rel="icon" href="assets/symbol.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#" data-go="home" aria-label="처음으로">
+    <img src="assets/symbol.svg" alt="" width="28" height="28">
+    <span>홍성군 <b>대형폐기물 도우미</b></span>
+  </a>
+  <button class="link" type="button" data-go="home" id="btnRestart" hidden>처음으로</button>
+  <div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
+</header>
+
+<main id="app">
+
+<!-- 0. 메인 -->
+<section class="step hero-step" data-step="home">
+  <div class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">홍성군 환경과 · 청소행정</p>
+      <h1>대형폐기물,<br>어떻게 버릴까요?</h1>
+      <p class="lede">사진 한 장이면 어떤 <strong>수수료 스티커</strong>를 사야 하는지, <strong>빼기 앱</strong>에서 어느 항목을 고르면 되는지 바로 알려드립니다.</p>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 400 220" preserveAspectRatio="none">
+        <g class="lines-top" stroke-width="2" fill="none" stroke-linecap="round">
+          <path d="M40 60h320"/><path d="M60 48h280"/><path d="M80 36h240"/><path d="M100 24h200"/><path d="M120 12h160"/><path d="M140 2h120"/>
+        </g>
+        <g class="lines-bottom" stroke-width="2" fill="none" stroke-linecap="round">
+          <path d="M40 160h320"/><path d="M60 174h280"/><path d="M80 188h240"/><path d="M110 202h180"/><path d="M140 216h120"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="choices">
+    <button class="choice" type="button" data-mode="sticker">
+      <span class="choice-kicker">방법 1</span>
+      <span class="choice-title">수수료 스티커 구입</span>
+      <span class="choice-desc">읍·면 행정복지센터에서 스티커를 사서 붙인 뒤 지정된 날 내놓습니다.</span>
+      <span class="pill dark">품목·수수료 확인 →</span>
+    </button>
+    <button class="choice" type="button" data-mode="ppeggi">
+      <span class="choice-kicker">방법 2</span>
+      <span class="choice-title">빼기 앱으로 신고</span>
+      <span class="choice-desc">스마트폰 앱에서 신고하고 결제합니다. 스티커를 따로 살 필요가 없습니다.</span>
+      <span class="pill">앱 분류 항목 확인 →</span>
+    </button>
+  </div>
+
+  <div class="howto">
+    <h2>이렇게 진행돼요</h2>
+    <ol>
+      <li><b>서비스 선택</b><span>스티커 또는 빼기 앱</span></li>
+      <li><b>사진·치수 입력</b><span>버릴 물건을 찍어 주세요</span></li>
+      <li><b>AI 판별</b><span>품목·규격·수수료를 알려드려요</span></li>
+    </ol>
+    <p class="fine">AI 판별 결과는 참고용입니다. 최종 품목과 수수료는 홍성군 조례 별표1과 담당 부서 안내를 따릅니다.</p>
+  </div>
+  <div id="homeContacts" class="contacts-block"></div>
+</section>
+
+<!-- 1. 확인·동의 -->
+<section class="step" data-step="consent" hidden>
+  <div class="wrap">
+    <p class="eyebrow" id="consentMode">수수료 스티커 구입</p>
+    <h1>시작하기 전에<br>확인해 주세요</h1>
+    <p class="lede" id="consentLede"></p>
+
+    <div class="block">
+      <h2>문의 전화</h2>
+      <div id="consentContacts" class="contacts"></div>
+      <p class="fine">읍·면 행정복지센터에서도 스티커 구매와 배출 신고를 도와드립니다.</p>
+    </div>
+
+    <div class="warn">
+      <h2>법적 안내</h2>
+      <p>품목·규격을 실제와 다르게 신고하거나 수수료를 적게 내는 등 <strong>허위로 신고한 경우 폐기물이 수거되지 않을 수 있으며</strong>, 「폐기물관리법」 및 「홍성군 폐기물 관리 조례」에 따라 과태료 등 불이익을 받을 수 있습니다. 스티커는 잘 보이는 곳에 부착하고, 신고한 장소와 날짜에 맞춰 배출해 주세요.</p>
+      <label class="check">
+        <input type="checkbox" id="agree">
+        <span>위 내용을 읽었으며, 허위 신고 시 수거되지 않을 수 있음을 확인했습니다.</span>
+      </label>
+    </div>
+    <button class="link" type="button" data-go="home">다른 방법 선택하기</button>
+  </div>
+</section>
+
+<!-- 2. 입력 -->
+<section class="step" data-step="input" hidden>
+  <div class="wrap">
+    <p class="eyebrow" id="inputMode"></p>
+    <h1>버릴 물건을<br>찍어 주세요</h1>
+    <p class="lede">물건 전체가 한 장에 들어오게 찍으면 더 정확합니다. 사진은 맥미니 서버의 AI가 분석하며 외부로 보내지 않습니다.</p>
+
+    <label class="photo" id="photoBox">
+      <input type="file" id="photo" accept="image/*" capture="environment">
+      <img id="photoPreview" alt="" hidden>
+      <span class="photo-empty" id="photoEmpty">
+        <svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="M4 8.5A2.5 2.5 0 0 1 6.5 6H8l1.2-2h5.6L16 6h1.5A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        <b>사진 촬영 또는 선택</b>
+        <small>JPG · PNG · HEIC</small>
+      </span>
+      <span class="photo-change" id="photoChange" hidden>다시 찍기</span>
+    </label>
+
+    <div class="block">
+      <h2>치수 <span class="opt">(선택)</span></h2>
+      <p class="fine">줄자로 잰 대략 크기를 cm로 넣으면 규격(인용·단수·폭)을 더 정확히 고를 수 있습니다.</p>
+      <div class="dims">
+        <label><span>가로</span><input type="number" inputmode="decimal" id="dimW" min="0" placeholder="0"><em>cm</em></label>
+        <label><span>깊이</span><input type="number" inputmode="decimal" id="dimD" min="0" placeholder="0"><em>cm</em></label>
+        <label><span>높이</span><input type="number" inputmode="decimal" id="dimH" min="0" placeholder="0"><em>cm</em></label>
+      </div>
+      <label class="field"><span>메모 <span class="opt">(선택)</span></span>
+        <input type="text" id="note" maxlength="80" placeholder="예: 3인용 패브릭 소파, 다리 분리됨"></label>
+    </div>
+
+    <button class="link" type="button" id="btnManual">사진 없이 목록에서 직접 찾기</button>
+  </div>
+</section>
+
+<!-- 3. 결과 -->
+<section class="step" data-step="result" hidden>
+  <div class="wrap">
+    <p class="eyebrow" id="resultMode"></p>
+    <div id="aiStatus" class="status" hidden>
+      <span class="spinner" aria-hidden="true"></span>
+      <div><b>사진을 분석하고 있어요</b><small>로컬 AI라 10~60초 정도 걸릴 수 있습니다.</small></div>
+    </div>
+    <div id="resultBody" hidden>
+      <h1 id="resultTitle"></h1>
+      <p class="lede" id="resultReason"></p>
+      <div class="card" id="resultCard"></div>
+      <div class="block" id="altBlock" hidden>
+        <h2>다른 후보</h2>
+        <div class="chips" id="altChips"></div>
+      </div>
+    </div>
+    <div class="block">
+      <h2 id="manualTitle">목록에서 직접 찾기</h2>
+      <input type="search" id="search" class="search" placeholder="품목 이름 검색 (예: 소파, 책장, 냉장고)" autocomplete="off">
+      <div id="list" class="list"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. 다음 할 일 -->
+<section class="step" data-step="done" hidden>
+  <div class="wrap">
+    <p class="eyebrow" id="doneMode"></p>
+    <h1 id="doneTitle">이제 이렇게 하세요</h1>
+    <div class="card summary" id="summaryCard"></div>
+    <ol class="todo" id="todoList"></ol>
+    <div id="doneContacts" class="contacts-block"></div>
+    <button class="link" type="button" id="btnCopy">결과 요약 복사</button>
+  </div>
+</section>
+
+</main>
+
+<footer class="cta" id="ctaBar" hidden>
+  <button class="btn primary" type="button" id="ctaBtn">시작하기</button>
+</footer>
+
+<script src="data/pricelist.js"></script>
+<script src="data/ppeggi.js"></script>
+<script src="data/contacts.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

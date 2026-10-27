@@ -1,0 +1,12 @@
+{
+  "name": "hongseong-waste-guide",
+  "version": "1.0.0",
+  "private": true,
+  "description": "홍성군 대형폐기물 배출 도우미 (스티커·빼기 앱 안내, Ollama 비전 분류)",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "mock": "MOCK_AI=1 node server.mjs"
+  },
+  "engines": { "node": ">=18" }
+}
