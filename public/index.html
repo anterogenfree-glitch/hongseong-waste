@@ -105,16 +105,18 @@
     <h1>버릴 물건을<br>찍어 주세요</h1>
     <p class="lede">물건 전체가 한 장에 들어오게 찍으면 더 정확합니다. 사진은 맥미니 서버의 AI가 분석하며 외부로 보내지 않습니다.</p>
 
-    <label class="photo" id="photoBox">
-      <input type="file" id="photo" accept="image/*" capture="environment">
+    <div class="photo" id="photoBox">
       <img id="photoPreview" alt="" hidden>
       <span class="photo-empty" id="photoEmpty">
         <svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="M4 8.5A2.5 2.5 0 0 1 6.5 6H8l1.2-2h5.6L16 6h1.5A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-        <b>사진 촬영 또는 선택</b>
-        <small>JPG · PNG · HEIC</small>
+        <b>아직 사진이 없어요</b>
+        <small>아래 버튼으로 찍거나 골라 주세요</small>
       </span>
-      <span class="photo-change" id="photoChange" hidden>다시 찍기</span>
-    </label>
+    </div>
+    <div class="photo-btns">
+      <label class="btn secondary"><input type="file" id="photoCam" accept="image/*" capture="environment" hidden>카메라로 촬영</label>
+      <label class="btn secondary"><input type="file" id="photo" accept="image/*" hidden>앨범에서 선택</label>
+    </div>
 
     <div class="block">
       <h2>치수 <span class="opt">(선택)</span></h2>
