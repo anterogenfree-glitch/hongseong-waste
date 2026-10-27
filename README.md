@@ -108,3 +108,14 @@ AI가 꺼져 있거나 느리면 자동으로 "목록에서 직접 찾기"로 �
 | 판별이 60초 이상 | 더 작은 모델(`gemma3:4b`)로 변경 |
 | 스마트폰에서 카메라가 안 열림 | HTTP(내부망)에서는 사진 선택만 가능. Cloudflare Tunnel(HTTPS)로 접속 |
 | 로그 | `server.log` 또는 터미널 출력 |
+
+## 8. 외부 호스팅(GitHub Pages) + 맥미니 AI 조합
+
+웹페이지를 GitHub Pages에 올리고(저장소에 push 하면 `.github/workflows/pages.yml`이 자동 배포), AI만 맥미니에서 돌릴 수도 있습니다.
+
+1. 맥미니: `npm start` 후 `cloudflared tunnel --url http://localhost:8787` → 터널 주소 확인
+2. 스마트폰에서 Pages 주소 뒤에 한 번만 `?api=터널주소` 를 붙여 엽니다.
+   예: `https://아이디.github.io/hongseong-waste/?api=https://xxxx.trycloudflare.com`
+3. 이후에는 주소 없이 열어도 저장된 AI 서버로 연결됩니다. (서버는 CORS 허용 설정됨)
+
+맥미니가 꺼져 있으면 AI 판별만 비활성화되고 목록 조회는 계속 동작합니다.

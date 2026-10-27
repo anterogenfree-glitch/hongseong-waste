@@ -34,8 +34,9 @@ function rateLimited(ip) {
   return arr.length > 20;
 }
 
+const CORS = { "access-control-allow-origin": "*", "access-control-allow-methods": "GET, POST, OPTIONS", "access-control-allow-headers": "content-type" };
 function json(res, code, obj) {
-  res.writeHead(code, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+  res.writeHead(code, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...CORS });
   res.end(JSON.stringify(obj));
 }
 
@@ -131,6 +132,7 @@ function serveStatic(req, res) {
 http.createServer(async (req, res) => {
   const ip = req.headers["cf-connecting-ip"] || req.socket.remoteAddress || "?";
   const url = new URL(req.url, "http://x");
+  if (req.method === "OPTIONS" && url.pathname.startsWith("/api/")) { res.writeHead(204, CORS); return res.end(); }
   if (url.pathname === "/api/health") return json(res, 200, await health());
   if (url.pathname === "/api/classify") {
     if (req.method !== "POST") return json(res, 405, { error: "method" });
