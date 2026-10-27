@@ -111,7 +111,7 @@ AI가 꺼져 있거나 느리면 자동으로 "목록에서 직접 찾기"로 �
 
 ## 8. 외부 호스팅(GitHub Pages) + 맥미니 AI 조합
 
-웹페이지를 GitHub Pages에 올리고(저장소에 push 하면 `.github/workflows/pages.yml`이 자동 배포), AI만 맥미니에서 돌릴 수도 있습니다.
+웹페이지는 GitHub Pages(https://anterogenfree-glitch.github.io/hongseong-waste/)에 올라가 있습니다. main에 push 하면 `.github/workflows/pages.yml`이 `public/`을 `gh-pages` 브랜치로 자동 배포합니다, AI만 맥미니에서 돌릴 수도 있습니다.
 
 1. 맥미니: `npm start` 후 `cloudflared tunnel --url http://localhost:8787` → 터널 주소 확인
 2. 스마트폰에서 Pages 주소 뒤에 한 번만 `?api=터널주소` 를 붙여 엽니다.
