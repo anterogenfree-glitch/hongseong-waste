@@ -88,7 +88,7 @@
 
   function reset() {
     Object.assign(state, { photoFile: null, photoB64: null, size: {}, note: "", ai: null, pick: null, specIdx: 0, optIdx: 0, manual: false });
-    $("#agree").checked = false; $("#photo").value = ""; $("#photoPreview").hidden = true; $("#photoEmpty").hidden = false; $("#photoChange").hidden = true;
+    $("#agree").checked = false; $("#photo").value = ""; $("#photoCam").value = ""; $("#photoPreview").hidden = true; $("#photoEmpty").hidden = false;
     ["#dimW", "#dimD", "#dimH", "#note", "#search"].forEach(s => $(s).value = "");
   }
 
@@ -118,24 +118,37 @@
     state.size = { w: +$("#dimW").value || 0, d: +$("#dimD").value || 0, h: +$("#dimH").value || 0 };
     state.note = $("#note").value.trim();
   }
-  $("#photo").addEventListener("change", async e => {
+  async function onPhoto(e) {
     const f = e.target.files && e.target.files[0]; if (!f) return;
+    $("#photoEmpty").querySelector("b").textContent = "사진을 불러오는 중…";
     try {
       const b64 = await resizeToJpeg(f, 1024, 0.85);
       state.photoB64 = b64; state.photoFile = f;
-      const img = $("#photoPreview"); img.src = b64; img.hidden = false; $("#photoEmpty").hidden = true; $("#photoChange").hidden = false;
-    } catch (err) { toast("사진을 불러오지 못했습니다. 다른 사진을 선택해 주세요."); }
+      const img = $("#photoPreview"); img.src = b64; img.hidden = false; $("#photoEmpty").hidden = true;
+    } catch (err) {
+      state.photoB64 = null; $("#photoEmpty").querySelector("b").textContent = "아직 사진이 없어요";
+      toast(/heic|heif/i.test(f.type + f.name) || err.message === "decode"
+        ? "이 사진 형식(HEIC 등)은 열 수 없어요. 카메라 설정에서 '고효율 사진'을 끄거나 앨범에서 JPG 사진을 골라 주세요."
+        : "사진을 불러오지 못했습니다. 다른 사진을 선택해 주세요.");
+    }
+    e.target.value = "";
     updateCta();
-  });
-  function resizeToJpeg(file, max, q) {
+  }
+  $("#photo").addEventListener("change", onPhoto);
+  $("#photoCam").addEventListener("change", onPhoto);
+  async function resizeToJpeg(file, max, q) {
+    const draw = (src, w, h) => {
+      const s = Math.min(1, max / Math.max(w, h));
+      const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(h * s));
+      c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+      return c.toDataURL("image/jpeg", q);
+    };
+    if (window.createImageBitmap) {
+      try { const bm = await createImageBitmap(file, { imageOrientation: "from-image" }); const out = draw(bm, bm.width, bm.height); bm.close(); return out; } catch {}
+    }
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file); const img = new Image();
-      img.onload = () => {
-        const s = Math.min(1, max / Math.max(img.width, img.height));
-        const c = document.createElement("canvas"); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-        URL.revokeObjectURL(url); resolve(c.toDataURL("image/jpeg", q));
-      };
+      img.onload = () => { try { resolve(draw(img, img.naturalWidth, img.naturalHeight)); } catch (e) { reject(new Error("decode")); } URL.revokeObjectURL(url); };
       img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("decode")); };
       img.src = url;
     });
