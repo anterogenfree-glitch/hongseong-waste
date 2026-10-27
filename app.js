@@ -235,7 +235,7 @@
       const rows = items.filter(i => i.group === g.id && match(i));
       if (!rows.length) continue;
       html += `<div class="gh">${g.name}</div>` + rows.map(i => {
-        const sub = state.mode === "ppeggi" ? `<small style="display:block;color:var(--fg-2);font-size:12px">${i.tile}</small>` : "";
+        const sub = state.mode === "ppeggi" ? `<span class="tile-sub">${i.tile}</span>` : "";
         return `<button type="button" data-id="${i.id}"><span>${i.name}${sub}</span><small>${feeOf(i)}</small></button>`;
       }).join("");
     }

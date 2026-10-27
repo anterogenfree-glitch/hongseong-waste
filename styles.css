@@ -178,11 +178,13 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .banner { background: var(--accent-soft); color: var(--accent); border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-top: 12px; }
 
 .search { margin-bottom: 8px; }
-.list { display: flex; flex-direction: column; border-top: 1px solid var(--line); max-height: 420px; overflow-y: auto; }
+.list { display: block; border-top: 1px solid var(--line); max-height: 420px; overflow-y: auto; }
 .list .gh { position: sticky; top: 0; background: var(--bg); font-size: 12px; letter-spacing: .1em; color: var(--fg-2); padding: 10px 0 4px; text-transform: uppercase; }
-.list button { font: inherit; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 12px 4px; min-height: 48px; color: var(--fg); display: flex; justify-content: space-between; gap: 10px; cursor: pointer; }
+.list button { font: inherit; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 12px 4px; min-height: 48px; height: auto; color: var(--fg); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 10px; cursor: pointer; width: 100%; line-height: 1.4; }
 .list button:hover { background: var(--bg-2); }
-.list button small { flex: none; font-variant-numeric: tabular-nums; }
+.list button > span { display: block; min-width: 0; }
+.list button > small { font-variant-numeric: tabular-nums; white-space: nowrap; padding-top: 2px; }
+.list .tile-sub { display: block; color: var(--fg-2); font-size: 12px; margin-top: 2px; }
 .list .empty { padding: 20px 0; color: var(--fg-2); }
 
 /* 완료 */
