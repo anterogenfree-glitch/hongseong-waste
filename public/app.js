@@ -113,7 +113,7 @@
   }
 
   // ───────── 2. 입력 ─────────
-  function renderInput() { $("#inputMode").textContent = MODE_LABEL[state.mode]; }
+  function renderInput() { $("#inputMode").textContent = MODE_LABEL[state.mode]; checkAI(); }
   function readInputs() {
     state.size = { w: +$("#dimW").value || 0, d: +$("#dimD").value || 0, h: +$("#dimH").value || 0 };
     state.note = $("#note").value.trim();
@@ -300,14 +300,31 @@
     toastEl.textContent = msg; toastEl.classList.add("show"); clearTimeout(toastEl._t); toastEl._t = setTimeout(() => toastEl.classList.remove("show"), 1800);
   }
 
-  // 서버 상태 확인(선택): AI 미연결이면 입력 화면에 안내
-  fetch(api("/api/health")).then(r => r.json()).then(h => {
-    if (!h.ok || h.modelInstalled === false) {
-      const p = document.createElement("p"); p.className = "banner";
-      p.textContent = !h.ok ? "AI 서버(Ollama)에 연결되지 않았습니다. 사진 판별 대신 목록에서 직접 찾기를 이용해 주세요." : `모델 ${h.model}이(가) 설치되지 않았습니다. README의 ollama pull 안내를 확인하세요.`;
-      $('[data-step="input"] .wrap').insertBefore(p, $("#photoBox"));
+  // AI 서버 상태 표시 + 주소 설정
+  let aiOk = false;
+  async function checkAI() {
+    const dot = $("#aiDot"), st = $("#aiState");
+    dot.className = "dot"; st.textContent = "AI 서버 확인 중…"; aiOk = false;
+    try {
+      const r = await fetch(api("/api/health"), { signal: AbortSignal.timeout(6000) });
+      const h = await r.json();
+      if (!h.ok) throw new Error(h.error || "down");
+      if (h.modelInstalled === false) { dot.className = "dot bad"; st.textContent = `모델 ${h.model} 미설치 — 맥미니에서 ollama pull 필요`; return; }
+      aiOk = true; dot.className = "dot ok"; st.textContent = API ? `AI 서버 연결됨 (${h.model || "모델"})` : `AI 서버 연결됨 (${h.model || "모델"})`;
+    } catch {
+      dot.className = "dot bad";
+      st.textContent = API ? "AI 서버에 연결되지 않음 — 맥미니 서버·터널 주소를 확인하세요" : "AI 서버 없음 — 맥미니 터널 주소를 설정하세요";
     }
-  }).catch(() => {});
+  }
+  $("#aiToggle").addEventListener("click", () => { const f = $("#aiForm"); f.hidden = !f.hidden; $("#aiUrl").value = API; if (!f.hidden) $("#aiUrl").focus(); });
+  $("#aiSave").addEventListener("click", () => {
+    let v = $("#aiUrl").value.trim().replace(/\/+$/, "");
+    if (v && !/^https?:\/\//.test(v)) v = "https://" + v;
+    API = v; try { localStorage.setItem("hs_api", API); } catch {}
+    $("#aiForm").hidden = true; checkAI(); toast(API ? "주소를 저장했습니다" : "같은 서버를 사용합니다");
+  });
+  $("#aiClear").addEventListener("click", () => { API = ""; try { localStorage.removeItem("hs_api"); } catch {} $("#aiUrl").value = ""; $("#aiForm").hidden = true; checkAI(); });
+  checkAI();
 
   go("home");
 })();

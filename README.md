@@ -114,7 +114,7 @@ AI가 꺼져 있거나 느리면 자동으로 "목록에서 직접 찾기"로 �
 웹페이지는 GitHub Pages(https://anterogenfree-glitch.github.io/hongseong-waste/)에 올라가 있습니다. main에 push 하면 `.github/workflows/pages.yml`이 `public/`을 `gh-pages` 브랜치로 자동 배포합니다, AI만 맥미니에서 돌릴 수도 있습니다.
 
 1. 맥미니: `npm start` 후 `cloudflared tunnel --url http://localhost:8787` → 터널 주소 확인
-2. 스마트폰에서 Pages 주소 뒤에 한 번만 `?api=터널주소` 를 붙여 엽니다.
+2. 스마트폰에서 사이트의 사진 입력 화면 → "서버 주소 설정"에 터널 주소를 넣고 연결(또는 주소 뒤에 `?api=터널주소`를 붙여 열기).
    예: `https://아이디.github.io/hongseong-waste/?api=https://xxxx.trycloudflare.com`
 3. 이후에는 주소 없이 열어도 저장된 AI 서버로 연결됩니다. (서버는 CORS 허용 설정됨)
 
