@@ -212,3 +212,17 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 
 @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 h1 em { font-style: normal; color: var(--accent); font-weight: 500; }
+
+/* AI 서버 상태 */
+.aibox { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.aibox-row { display: flex; align-items: center; gap: 10px; min-height: 36px; }
+.aibox-row b { flex: 1; font-size: 14px; }
+.aibox-row .link { padding: 6px 0; min-height: 36px; font-size: 14px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--fg-2); flex: none; }
+.dot.ok { background: #2bb673; } .dot.bad { background: #e0533d; }
+.aibox-form { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; margin-top: 8px; border-top: 1px solid var(--line); }
+.aibox-form input[type=url] { font: inherit; font-size: 16px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; height: 48px; padding: 0 12px; width: 100%; }
+.aibox-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.aibox-btns .btn { min-width: 0; height: 44px; background: var(--bg); color: var(--fg); border-color: var(--fg); }
+.aibox .fine { margin: 0; }
+code { font-size: 12px; background: var(--bg-2); padding: 2px 6px; border-radius: 6px; }
