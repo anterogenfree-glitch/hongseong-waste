@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="홍성군 모티프 심벌">
+  <!-- 조양문 모티프: 위 6선(6대주), 아래 5선(5대양) — 자체 제작 -->
+  <circle cx="60" cy="60" r="56" fill="#0F7C86"/>
+  <g stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none">
+    <path d="M30 44h60"/><path d="M34 38h52"/><path d="M38 32h44"/><path d="M42 26h36"/><path d="M46 20h28"/><path d="M50 14h20"/>
+  </g>
+  <path d="M38 50h44l6 10H32z" fill="#FFFFFF"/>
+  <rect x="44" y="60" width="32" height="22" rx="2" fill="#FFFFFF"/>
+  <path d="M56 82v-14a4 4 0 0 1 8 0v14z" fill="#0F7C86"/>
+  <g stroke="#9FDCE2" stroke-width="3" stroke-linecap="round" fill="none">
+    <path d="M28 90h64"/><path d="M32 96h56"/><path d="M36 102h48"/><path d="M42 108h36"/><path d="M50 113h20"/>
+  </g>
+</svg>
