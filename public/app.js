@@ -14,7 +14,13 @@
   const P = window.PRICELIST, G = window.PPEGGI, C = window.CONTACTS;
   const groupName = id => (P.groups.find(g => g.id === id) || {}).name || "";
   const stickerItems = () => P.items;
-  const ppeggiItems = () => G.categories.flatMap(c => c.items.map(i => ({ ...i, group: c.id, groupName: c.name, path: `${c.name} > ${i.name}` })));
+  let _pp;
+  const ppeggiItems = () => _pp || (_pp = G.categories.flatMap(c => c.tiles.flatMap(t => t.items.map(i => {
+    const ref = i.ref ? P.items.find(x => x.id === i.ref) : null;
+    const specs = i.specs || (ref ? ref.specs : [["모든 규격", null]]);
+    return { ...i, group: c.id, groupName: c.name, tile: t.name, path: `${c.name} › ${t.name} › ${i.name}`,
+      specs, sizeRule: ref ? ref.sizeRule : null, refName: ref ? ref.name : null, note: i.note || (ref ? ref.note : "") };
+  }))));
   const itemsFor = mode => mode === "ppeggi" ? ppeggiItems() : stickerItems();
   const namesFor = mode => mode === "ppeggi" ? ppeggiItems().map(i => i.path) : stickerItems().map(i => i.name);
 
@@ -157,7 +163,7 @@
   function choose(item, ai) {
     $("#aiStatus").hidden = true;
     state.pick = item;
-    state.specIdx = state.mode === "sticker" ? suggestSpec(item, state.size) : 0;
+    state.specIdx = item.specIdx != null ? item.specIdx : suggestSpec(item, state.size);
     state.optIdx = 0;
     const body = $("#resultBody"); body.hidden = false;
     const name = state.mode === "ppeggi" ? item.name : item.name;
@@ -193,15 +199,18 @@
         ${it.note ? `<p class="note">${it.note}</p>` : ""}`;
       $$("[data-spec]", card).forEach(b => b.addEventListener("click", () => { state.specIdx = +b.dataset.spec; renderCard(); }));
     } else {
-      const opts = it.options || [];
+      const specs = it.specs; const [spec, fee] = specs[state.specIdx]; const free = fee === null && it.ref;
+      const fixed = it.specIdx != null;
       card.innerHTML = `
-        ${G.ready ? "" : `<div class="banner" style="margin:0 0 14px">빼기 앱 홍성군 분류표를 준비 중입니다. 아래는 임시 예시이며, 실제 앱 항목과 다를 수 있습니다.</div>`}
         <div class="label">빼기 앱에서 고를 항목</div>
         <div class="item">${it.name}</div>
-        <div class="group">${it.groupName} › ${it.name}</div>
-        ${opts.length > 1 ? `<div class="specs"><h3>세부 옵션</h3><div class="chips">${opts.map((o, i) => `<button class="chip" type="button" data-opt="${i}" aria-pressed="${i === state.optIdx}">${o.label}${o.fee != null ? " · " + won(o.fee) : ""}</button>`).join("")}</div></div>` : ""}
-        ${opts[state.optIdx] && opts[state.optIdx].fee != null ? `<div class="fee"><div class="amt">${won(opts[state.optIdx].fee)}</div><div class="spec">${opts[state.optIdx].label}</div></div>` : `<p class="note">수수료는 빼기 앱에서 품목·옵션을 선택하면 표시됩니다.</p>`}`;
-      $$("[data-opt]", card).forEach(b => b.addEventListener("click", () => { state.optIdx = +b.dataset.opt; renderCard(); }));
+        <div class="group">${it.groupName} › ${it.tile}${it.inferred ? " <span class='hint'>위치 추정</span>" : ""}</div>
+        ${specs.length > 1 && !fixed ? `<div class="specs"><h3>규격 선택${it.sizeRule && (state.size.w || state.size.h) ? " · 입력한 치수로 추천됨" : ""}</h3><div class="chips">${specs.map((s, i) => `<button class="chip" type="button" data-spec="${i}" aria-pressed="${i === state.specIdx}">${s[0]}${s[1] !== undefined && (s[1] !== null || it.ref) ? " · " + won(s[1]) : ""}</button>`).join("")}</div></div>` : ""}
+        <div class="fee"><div class="amt ${free ? "free" : ""}">${it.ref ? (free ? "수수료 면제" : won(fee)) : "앱에서 확인"}</div><div class="spec">${spec}</div></div>
+        <p class="note">${G.feeNote}</p>
+        ${free ? `<p class="note">가전제품은 폐가전 무상방문수거(1599-0903)로 신청하면 수수료 없이 가져갑니다.</p>` : ""}
+        ${it.note ? `<p class="note">${it.note}</p>` : ""}`;
+      $$("[data-spec]", card).forEach(b => b.addEventListener("click", () => { state.specIdx = +b.dataset.spec; renderCard(); }));
     }
   }
 
@@ -210,14 +219,15 @@
     const t = norm(q); const items = itemsFor(state.mode); const list = $("#list");
     const match = i => !t || [i.name, i.path, ...(i.aliases || [])].some(k => k && norm(k).includes(t));
     const groups = state.mode === "ppeggi" ? G.categories.map(c => ({ id: c.id, name: c.name })) : P.groups;
+    const feeOf = i => { if (i.specIdx != null) return won(i.specs[i.specIdx][1]); const fees = [...new Set(i.specs.map(s => s[1]))]; const nums = fees.filter(f => f !== null);
+      if (state.mode === "ppeggi" && !i.ref) return ""; return fees.length === 1 ? won(fees[0]) : nums.length ? `${won(Math.min(...nums))}~` : "면제"; };
     let html = "";
     for (const g of groups) {
       const rows = items.filter(i => i.group === g.id && match(i));
       if (!rows.length) continue;
       html += `<div class="gh">${g.name}</div>` + rows.map(i => {
-        const fees = state.mode === "sticker" ? [...new Set(i.specs.map(s => s[1]))] : [];
-        const feeTxt = state.mode === "sticker" ? (fees.length === 1 ? won(fees[0]) : `${won(Math.min(...fees.filter(f => f !== null)))}~`) : "";
-        return `<button type="button" data-id="${i.id}"><span>${i.name}</span><small>${feeTxt}</small></button>`;
+        const sub = state.mode === "ppeggi" ? `<small style="display:block;color:var(--fg-2);font-size:12px">${i.tile}</small>` : "";
+        return `<button type="button" data-id="${i.id}"><span>${i.name}${sub}</span><small>${feeOf(i)}</small></button>`;
       }).join("");
     }
     list.innerHTML = html || `<div class="empty">검색 결과가 없습니다. "그 외 봉투에 담기 어려운 폐기물"을 선택해 주세요.</div>`;
@@ -232,15 +242,15 @@
       const [spec, fee] = it.specs[state.specIdx];
       return [["방법", "수수료 스티커"], ["품목", `${it.name} (${groupName(it.group)})`], ["규격", spec], ["수수료", fee === null ? "면제 (무상수거)" : won(fee)]];
     }
-    const o = (it.options || [])[state.optIdx];
-    return [["방법", "빼기 앱"], ["분류", it.groupName], ["항목", it.name], ...(o ? [["옵션", o.label]] : [])];
+    const [spec, fee] = it.specs[state.specIdx];
+    return [["방법", "빼기 앱"], ["분류", `${it.groupName} › ${it.tile}`], ["항목", it.name], ["규격", spec], ["수수료(조례 기준)", it.ref ? (fee === null ? "면제" : won(fee)) : "앱에서 확인"]];
   }
   function renderDone() {
     $("#doneMode").textContent = MODE_LABEL[state.mode];
     $("#summaryCard").innerHTML = summaryRows().map(([k, v]) => `<div class="row"><span>${k}</span><span>${v}</span></div>`).join("");
-    const it = state.pick; const free = state.mode === "sticker" && it && it.specs[state.specIdx][1] === null;
+    const it = state.pick; const free = it && (state.mode === "sticker" || it.ref) && it.specs[state.specIdx][1] === null;
     let todo;
-    if (free) todo = [
+    if (free && state.mode === "sticker") todo = [
       ["폐가전 무상방문수거 신청", `<a href="tel:15990903">1599-0903</a> 또는 인터넷(15990903.or.kr)으로 수거를 예약하세요. 수수료가 없습니다.`],
       ["수거일에 현관 앞에 내놓기", "원형이 훼손된 제품(문짝·압축기 분리 등)은 무상수거가 어려우니 스티커 구입이 필요할 수 있습니다."],
       ["궁금하면 환경과에 문의", `<a href="tel:0416301350">041-630-1350</a>`]];
@@ -250,7 +260,7 @@
       ["신고한 날짜에 지정 장소에 배출", `수거 문의: 홍주환경 <a href="tel:0416343999">041-634-3999</a> · 우리환경 <a href="tel:0416347554">041-634-7554</a>`]];
     else todo = [
       ["빼기 앱 열기", `<a href="${C.ppeggi.android}" target="_blank" rel="noopener">Android</a> · <a href="${C.ppeggi.ios}" target="_blank" rel="noopener">iPhone</a> · <a href="${C.ppeggi.web}" target="_blank" rel="noopener">웹</a>`],
-      ["홍성군 선택 후 품목 고르기", `${it ? `${it.groupName} › ${it.name}` : ""} 항목을 선택하고 배출 장소·날짜를 입력하세요.`],
+      ["홍성군 선택 후 품목 고르기", `<b style="font-weight:500">${it ? `${it.groupName} › ${it.tile} › ${it.name}` : ""}</b> 순서로 고르고 규격 "${it ? it.specs[state.specIdx][0] : ""}"을 선택한 뒤 배출 장소·날짜를 입력하세요.`],
       ["결제 후 신고 번호 확인", "앱에서 안내한 날짜에 지정 장소에 내놓으면 됩니다. 신고 내용과 실제가 다르면 수거되지 않을 수 있습니다."]];
     $("#todoList").innerHTML = todo.map(([b, s]) => `<li><div><b>${b}</b><span>${s}</span></div></li>`).join("");
     $("#doneContacts").innerHTML = contactsHtml(true);

@@ -85,7 +85,7 @@ Ollama는 `brew services start ollama` 로 이미 자동 실행됩니다.
 - **가격표** `public/data/pricelist.js`: `specs: [["규격", 수수료]]`, 수수료 `null` = 면제.
   `aliases`에 군민이 쓰는 다른 이름(소파/쇼파 등)을 넣으면 AI 결과 매칭과 검색에 사용됩니다.
   `sizeRule`은 입력 치수(cm)로 규격을 자동 추천하는 규칙입니다.
-- **빼기 분류표** `public/data/ppeggi.js`: `ready: true`로 바꾸고 `categories`를 채우세요.
+- **빼기 분류표** `public/data/ppeggi.js`: 대분류 → 타일 → 품목. `ref`는 조례 품목 id(수수료·규격 공유), `inferred: true`는 캡처에서 가려져 추정한 위치입니다. 앱과 다르면 해당 품목을 다른 타일로 옮기세요.
 - **연락처** `public/data/contacts.js`: 읍·면 `phone`을 채우면 메인·완료 화면에 표시됩니다.
 
 ## 6. 동작 방식
