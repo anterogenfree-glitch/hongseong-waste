@@ -5,6 +5,15 @@
   const won = n => n === null || n === undefined ? "면제" : n.toLocaleString("ko-KR") + "원";
 
   const STEPS = ["home", "consent", "input", "result", "done"];
+  // AI 서버 주소: 같은 서버(맥미니에서 직접 서비스)면 빈 값. 외부 호스팅(GitHub Pages 등)이면
+  // 주소 뒤에 ?api=https://맥미니터널주소 를 한 번 붙여 열면 저장됩니다.
+  let API = "";
+  try {
+    const q = new URLSearchParams(location.search).get("api");
+    if (q !== null) { API = q.replace(/\/$/, ""); localStorage.setItem("hs_api", API); history.replaceState(null, "", location.pathname); }
+    else API = localStorage.getItem("hs_api") || "";
+  } catch {}
+  const api = path => API + path;
   const MODE_LABEL = { sticker: "수수료 스티커 구입", ppeggi: "빼기 앱으로 신고" };
 
   const state = { mode: "sticker", step: "home", photoFile: null, photoB64: null, size: {}, note: "",
@@ -142,7 +151,7 @@
     if (state.manual || !state.photoB64) return;
     status.hidden = false;
     try {
-      const r = await fetch("/api/classify", { method: "POST", headers: { "content-type": "application/json" },
+      const r = await fetch(api("/api/classify"), { method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ mode: state.mode, image: state.photoB64, names: namesFor(state.mode), size: state.size, note: state.note }) });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || r.status);
@@ -279,7 +288,7 @@
   }
 
   // 서버 상태 확인(선택): AI 미연결이면 입력 화면에 안내
-  fetch("/api/health").then(r => r.json()).then(h => {
+  fetch(api("/api/health")).then(r => r.json()).then(h => {
     if (!h.ok || h.modelInstalled === false) {
       const p = document.createElement("p"); p.className = "banner";
       p.textContent = !h.ok ? "AI 서버(Ollama)에 연결되지 않았습니다. 사진 판별 대신 목록에서 직접 찾기를 이용해 주세요." : `모델 ${h.model}이(가) 설치되지 않았습니다. README의 ollama pull 안내를 확인하세요.`;
