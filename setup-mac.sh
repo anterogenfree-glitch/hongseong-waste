@@ -77,7 +77,7 @@ cat <<MSG
 ======================================================================
 완료!
  1) AI 서버 터널 주소:  ${URL:-(tunnel.log 참고)}
- 2) 스마트폰에서 https://hswaste.bajaetrading.xyz 열기
+ 2) 스마트폰에서 https://anterogenfree-glitch.github.io/hongseong-waste/ 열기
     → 사진 입력 화면 → "서버 주소 설정"에 위 주소 붙여넣기 → "연결"
     → 초록 점 "AI 서버 연결됨" 으로 바뀌면 끝
  3) 맥미니를 재부팅해도 서버·터널·Ollama 가 자동 실행됩니다.
