@@ -131,7 +131,7 @@ AI가 꺼져 있거나 느리면 자동으로 "목록에서 직접 찾기"로 �
 
 ## 8. 외부 호스팅(GitHub Pages) + 맥미니 AI 조합
 
-웹페이지는 GitHub Pages(https://anterogenfree-glitch.github.io/hongseong-waste/)에 올라가 있습니다. main에 push 하면 `.github/workflows/pages.yml`이 `public/`을 `gh-pages` 브랜치로 자동 배포합니다, AI만 맥미니에서 돌릴 수도 있습니다.
+웹페이지는 GitHub Pages에 올라가 있고 주소는 **https://hswaste.bajaetrading.xyz** 입니다(`public/CNAME` + Cloudflare DNS CNAME `hswaste → anterogenfree-glitch.github.io`, 프록시 끔). 예전 주소 https://anterogenfree-glitch.github.io/hongseong-waste/ 는 자동으로 새 주소로 넘어갑니다. main에 push 하면 `.github/workflows/pages.yml`이 `public/`을 `gh-pages` 브랜치로 자동 배포합니다, AI만 맥미니에서 돌릴 수도 있습니다.
 
 1. 웹페이지는 기본적으로 `https://waste.bajaetrading.xyz`(맥미니의 Cloudflare 고정 터널, `public/app.js` 의 `DEFAULT_API`)에 접속합니다. 군민은 아무 설정 없이 바로 사용합니다.
 2. 다른 서버를 쓰려면 사진 입력 화면 → "서버 주소 설정"에 주소를 넣고 연결(또는 주소 뒤에 `?api=주소`를 붙여 열기). 저장된 주소가 안 되면 자동으로 기본 서버로 돌아갑니다.
