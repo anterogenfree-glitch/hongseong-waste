@@ -21,6 +21,8 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "qwen2.5vl:7b";
 const MOCK_AI = process.env.MOCK_AI === "1";
 const MAX_BODY = 6 * 1024 * 1024; // 6MB (리사이즈된 JPEG base64 기준 충분)
 const TIMEOUT_MS = 120_000;
+// 모델을 메모리에 계속 올려 둠(기본 5분 후 내려가 다음 요청이 10~30초 느려지는 것 방지)
+const KEEP_ALIVE = process.env.OLLAMA_KEEP_ALIVE || "24h";
 
 const MIME = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json; charset=utf-8", ".webmanifest": "application/manifest+json" };
@@ -74,7 +76,8 @@ async function ollamaChat(messages, format, signal) {
   const r = await fetch(`${OLLAMA_URL}/api/chat`, {
     method: "POST", signal,
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ model: OLLAMA_MODEL, stream: false, format, options: { temperature: 0.1 }, messages })
+    body: JSON.stringify({ model: OLLAMA_MODEL, stream: false, format, keep_alive: KEEP_ALIVE,
+      options: { temperature: 0.1, num_predict: 220 }, messages })
   });
   if (!r.ok) throw new Error(`ollama_${r.status}`);
   const data = await r.json();
@@ -94,7 +97,7 @@ function describePrompt({ size, note }) {
     "배경이나 주변에 있는 다른 가구·물건은 무시하세요. 물건이 여러 개면 화면 가운데에 가장 가깝고 가장 큰 것 하나만 고르세요.",
     "그 물건이 무엇인지 가장 일반적인 한국어 이름 한 단어로 답하세요. 예: 의자, 소파, 식탁, 책상, 서랍장, 옷장, 침대, 매트리스, 냉장고, 세탁기, 텔레비전, 자전거.",
     sizeTxt, note ? `사용자 메모: ${note}` : "",
-    'JSON으로만 답하세요: {"object": 물건 이름 한 단어, "kind": "가구"|"가전"|"생활용품"|"운동·취미"|"기타", "description": 생김새·재질·용도를 한 문장(한국어), "size_hint": 사진으로 추정한 크기·인용·단수 한 줄}'
+    'JSON으로만 답하세요: {"object": 물건 이름 한 단어, "kind": "가구"|"가전"|"생활용품"|"운동·취미"|"기타", "description": 생김새·용도를 15자 내외 짧게(한국어), "size_hint": 사진으로 추정한 크기·인용·단수 한 줄}'
   ].filter(Boolean).join("\n");
 }
 
@@ -208,4 +211,18 @@ http.createServer(async (req, res) => {
 }).listen(PORT, "0.0.0.0", () => {
   console.log(`홍성군 대형폐기물 도우미  http://localhost:${PORT}`);
   console.log(MOCK_AI ? "AI: 모의 응답 모드(MOCK_AI=1)" : `AI: Ollama ${OLLAMA_URL} / ${OLLAMA_MODEL}`);
+  if (!MOCK_AI) warmup();
 });
+
+async function warmup() {
+  for (let i = 0; i < 10; i++) {
+    try {
+      const t0 = Date.now();
+      await fetch(`${OLLAMA_URL}/api/generate`, { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ model: OLLAMA_MODEL, keep_alive: KEEP_ALIVE, prompt: "" }) }).then(r => { if (!r.ok) throw new Error(r.status); });
+      console.log(`모델 적재 완료 (${Date.now() - t0}ms), keep_alive=${KEEP_ALIVE}`);
+      return;
+    } catch (e) { await new Promise(r => setTimeout(r, 5000)); }
+  }
+  console.log("모델 사전 적재 실패 — 첫 요청 때 적재됩니다");
+}

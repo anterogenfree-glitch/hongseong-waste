@@ -123,7 +123,8 @@ AI가 꺼져 있거나 느리면 자동으로 "목록에서 직접 찾기"로 �
 |---|---|
 | 입력 화면에 "AI 서버에 연결되지 않았습니다" | `brew services restart ollama`, `.env`의 `OLLAMA_URL` 확인 |
 | "모델이 설치되지 않았습니다" | `ollama pull qwen2.5vl:7b` |
-| 판별이 60초 이상 | 더 작은 모델(`gemma3:4b`)로 변경 |
+| 판별이 60초 이상 | 서버 재시작 직후면 모델 적재 중(1회). 계속 느리면 `.env`의 `OLLAMA_MODEL`을 `gemma3:4b`로 변경 후 `ollama pull gemma3:4b` |
+| 몇 분 쉬면 다시 느려짐 | 서버가 `keep_alive=24h`로 모델을 메모리에 유지합니다. `.env`의 `OLLAMA_KEEP_ALIVE` 확인 |
 | 스마트폰에서 카메라가 안 열림 | HTTP(내부망)에서는 사진 선택만 가능. Cloudflare Tunnel(HTTPS)로 접속 |
 | 터널 주소로 접속이 안 됨 | `tail -20 tunnel.log` 확인, 주소가 바뀌었으면 스마트폰에서 새 주소로 다시 연결 |
 | 로그 | `server.log`, `tunnel.log`, `brew services list`, `ollama list` |

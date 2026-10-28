@@ -124,7 +124,7 @@
     const f = e.target.files && e.target.files[0]; if (!f) return;
     $("#photoEmpty").querySelector("b").textContent = "사진을 불러오는 중…";
     try {
-      const b64 = await resizeToJpeg(f, 1024, 0.85);
+      const b64 = await resizeToJpeg(f, 768, 0.8); // 768px: 비전 모델 입력 토큰을 줄여 판별 속도 향상
       state.photoB64 = b64; state.photoFile = f;
       const img = $("#photoPreview"); img.src = b64; img.hidden = false; $("#photoEmpty").hidden = true;
     } catch (err) {
