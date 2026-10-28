@@ -132,9 +132,8 @@ AI가 꺼져 있거나 느리면 자동으로 "목록에서 직접 찾기"로 �
 
 웹페이지는 GitHub Pages(https://anterogenfree-glitch.github.io/hongseong-waste/)에 올라가 있습니다. main에 push 하면 `.github/workflows/pages.yml`이 `public/`을 `gh-pages` 브랜치로 자동 배포합니다, AI만 맥미니에서 돌릴 수도 있습니다.
 
-1. 맥미니: `./setup-mac.sh` 가 끝날 때 출력된 터널 주소 확인 (또는 위 4번의 `grep` 명령)
-2. 스마트폰에서 사이트의 사진 입력 화면 → "서버 주소 설정"에 터널 주소를 넣고 연결(또는 주소 뒤에 `?api=터널주소`를 붙여 열기).
-   예: `https://아이디.github.io/hongseong-waste/?api=https://xxxx.trycloudflare.com`
-3. 이후에는 주소 없이 열어도 저장된 AI 서버로 연결됩니다. (서버는 CORS 허용 설정됨)
+1. 웹페이지는 기본적으로 `https://waste.bajaetrading.xyz`(맥미니의 Cloudflare 고정 터널, `public/app.js` 의 `DEFAULT_API`)에 접속합니다. 군민은 아무 설정 없이 바로 사용합니다.
+2. 다른 서버를 쓰려면 사진 입력 화면 → "서버 주소 설정"에 주소를 넣고 연결(또는 주소 뒤에 `?api=주소`를 붙여 열기). 저장된 주소가 안 되면 자동으로 기본 서버로 돌아갑니다.
+3. 맥미니의 고정 터널은 기존 `bajae` 터널(`~/.cloudflared/config.yml`)에 `waste.bajaetrading.xyz → localhost:8787` 을 추가한 것입니다. 임시 터널(`com.hongseong.tunnel.plist`)은 이 경우 필요 없습니다.
 
 맥미니가 꺼져 있으면 AI 판별만 비활성화되고 목록 조회는 계속 동작합니다.

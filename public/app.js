@@ -7,11 +7,13 @@
   const STEPS = ["home", "consent", "input", "result", "done"];
   // AI 서버 주소: 같은 서버(맥미니에서 직접 서비스)면 빈 값. 외부 호스팅(GitHub Pages 등)이면
   // 주소 뒤에 ?api=https://맥미니터널주소 를 한 번 붙여 열면 저장됩니다.
-  let API = "";
+  // 기본 AI 서버(맥미니 고정 터널 주소). 저장된 주소가 없거나 연결이 안 되면 이 주소를 씁니다.
+  const DEFAULT_API = "https://waste.bajaetrading.xyz";
+  let API = DEFAULT_API;
   try {
     const q = new URLSearchParams(location.search).get("api");
     if (q !== null) { API = q.replace(/\/$/, ""); localStorage.setItem("hs_api", API); history.replaceState(null, "", location.pathname); }
-    else API = localStorage.getItem("hs_api") || "";
+    else API = localStorage.getItem("hs_api") || DEFAULT_API;
   } catch {}
   const api = path => API + path;
   const MODE_LABEL = { sticker: "수수료 스티커 구입", ppeggi: "빼기 앱으로 신고" };
@@ -302,19 +304,30 @@
 
   // AI 서버 상태 표시 + 주소 설정
   let aiOk = false;
+  async function probe(base) {
+    const r = await fetch(base + "/api/health", { signal: AbortSignal.timeout(8000) });
+    const h = await r.json();
+    if (!h.ok) throw new Error(h.error || "down");
+    return h;
+  }
   async function checkAI() {
     const dot = $("#aiDot"), st = $("#aiState");
     dot.className = "dot"; st.textContent = "AI 서버 확인 중…"; aiOk = false;
-    try {
-      const r = await fetch(api("/api/health"), { signal: AbortSignal.timeout(6000) });
-      const h = await r.json();
-      if (!h.ok) throw new Error(h.error || "down");
-      if (h.modelInstalled === false) { dot.className = "dot bad"; st.textContent = `모델 ${h.model} 미설치 — 맥미니에서 ollama pull 필요`; return; }
-      aiOk = true; dot.className = "dot ok"; st.textContent = API ? `AI 서버 연결됨 (${h.model || "모델"})` : `AI 서버 연결됨 (${h.model || "모델"})`;
-    } catch {
-      dot.className = "dot bad";
-      st.textContent = API ? "AI 서버에 연결되지 않음 — 맥미니 서버·터널 주소를 확인하세요" : "AI 서버 없음 — 맥미니 터널 주소를 설정하세요";
+    let h;
+    try { h = await probe(API); }
+    catch {
+      // 저장된 주소(옛 임시 터널 등)가 안 되면 기본 주소로 자동 전환
+      if (API !== DEFAULT_API) {
+        try { h = await probe(DEFAULT_API); API = DEFAULT_API; try { localStorage.setItem("hs_api", API); } catch {} } catch {}
+      }
     }
+    if (!h) {
+      dot.className = "dot bad";
+      st.textContent = `AI 서버에 연결되지 않음 (${API.replace(/^https?:\/\//, "")}) — 맥미니가 켜져 있는지 확인하세요`;
+      return;
+    }
+    if (h.modelInstalled === false) { dot.className = "dot bad"; st.textContent = `모델 ${h.model} 미설치 — 맥미니에서 ollama pull 필요`; return; }
+    aiOk = true; dot.className = "dot ok"; st.textContent = `AI 서버 연결됨 (${h.model || "모델"})`;
   }
   $("#aiToggle").addEventListener("click", () => { const f = $("#aiForm"); f.hidden = !f.hidden; $("#aiUrl").value = API; if (!f.hidden) $("#aiUrl").focus(); });
   $("#aiSave").addEventListener("click", () => {
@@ -323,7 +336,7 @@
     API = v; try { localStorage.setItem("hs_api", API); } catch {}
     $("#aiForm").hidden = true; checkAI(); toast(API ? "주소를 저장했습니다" : "같은 서버를 사용합니다");
   });
-  $("#aiClear").addEventListener("click", () => { API = ""; try { localStorage.removeItem("hs_api"); } catch {} $("#aiUrl").value = ""; $("#aiForm").hidden = true; checkAI(); });
+  $("#aiClear").addEventListener("click", () => { API = DEFAULT_API; try { localStorage.removeItem("hs_api"); } catch {} $("#aiUrl").value = ""; $("#aiForm").hidden = true; checkAI(); toast("기본 서버를 사용합니다"); });
   checkAI();
 
   go("home");
