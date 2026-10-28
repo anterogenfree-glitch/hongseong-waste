@@ -12,17 +12,28 @@ hongseong-waste/
 │   ├── data/ppeggi.js     빼기 앱 분류표 (※ 홍성군 분류표 수신 후 교체)
 │   ├── data/contacts.js   연락처 (읍·면 번호는 비워 둠 → 채우면 자동 표시)
 │   └── assets/symbol.svg  조양문 모티프 심벌
-├── setup-mac.sh           맥미니 1회 설치 스크립트
-├── com.hongseong.waste.plist  로그인 시 자동 실행(launchd, 선택)
+├── setup-mac.sh           맥미니 1회 설치 + 실행 + 자동 실행 등록 (한 줄로 끝)
+├── install-launchd.sh     서버·터널을 로그인 시 자동 실행하도록 등록
+├── test-classify.sh       사진 1장으로 실제 판별 테스트
+├── com.hongseong.waste.plist   launchd: Node 서버
+├── com.hongseong.tunnel.plist  launchd: Cloudflare 임시 터널
 └── .env.example           설정 예시
 ```
 
-## 1. 맥미니 설치 (한 번만)
+## 1. 맥미니 설치 (한 번만, 모두 무료)
+
+터미널(응용 프로그램 → 유틸리티 → 터미널)에 아래를 붙여넣으면 설치 → 모델 다운로드 → 서버·터널 실행 → 자동 실행 등록까지 끝나고,
+마지막에 **터널 주소**가 출력됩니다. (Homebrew 설치 중 관리자 비밀번호를 물으면 입력)
 
 ```bash
-cd ~/hongseong-waste
-./setup-mac.sh            # Homebrew → node, ollama, cloudflared 설치 + 모델 다운로드
+[ -d ~/hongseong-waste ] && git -C ~/hongseong-waste pull || git clone https://github.com/anterogenfree-glitch/hongseong-waste ~/hongseong-waste; cd ~/hongseong-waste && chmod +x setup-mac.sh && ./setup-mac.sh
 ```
+
+- 메모리 8GB 이하면 자동으로 `gemma3:4b`, 그 외에는 `qwen2.5vl:7b`를 받습니다. 직접 고르려면 `OLLAMA_MODEL=gemma3:4b ./setup-mac.sh`
+- 설치만 하고 실행은 직접 하려면 `SKIP_LAUNCHD=1 ./setup-mac.sh`
+- 설치 후 확인: `curl -s localhost:8787/api/health` → `{"ok":true,...,"modelInstalled":true}` 이면 정상.
+  `modelInstalled:false` 면 `ollama list` 로 모델명을 확인해 `.env` 의 `OLLAMA_MODEL` 을 고친 뒤 `./install-launchd.sh` 재실행.
+- 실제 판별 테스트: `./test-classify.sh 사진.jpg` (첫 요청은 모델 적재 때문에 30~90초, 이후 M1·16GB 기준 10~30초)
 
 직접 하려면:
 
@@ -69,16 +80,23 @@ cloudflared tunnel --url http://localhost:8787
 
 터널은 HTTPS를 자동 제공하므로 스마트폰 카메라 촬영(`capture`)이 정상 동작합니다.
 
-## 4. 재부팅해도 자동 실행 (선택)
+## 4. 재부팅해도 자동 실행
 
-`com.hongseong.waste.plist`의 `USERNAME`과 경로를 고친 뒤:
+`setup-mac.sh` 가 이미 등록했습니다. 다시 등록하려면:
 
 ```bash
-cp com.hongseong.waste.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/com.hongseong.waste.plist
+./install-launchd.sh      # 두 plist 의 USERNAME·node·cloudflared 경로를 자동 치환해 ~/Library/LaunchAgents 에 복사 + load
 ```
 
-Ollama는 `brew services start ollama` 로 이미 자동 실행됩니다.
+- `com.hongseong.waste.plist` → Node 서버(`server.log`), `com.hongseong.tunnel.plist` → Cloudflare 터널(`tunnel.log`). 둘 다 `KeepAlive` 라 죽으면 다시 뜹니다.
+- Ollama 는 `brew services start ollama` 로 자동 실행됩니다.
+- 임시 터널 주소는 **재시작할 때마다 바뀝니다.** 현재 주소 확인:
+
+```bash
+grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' ~/hongseong-waste/tunnel.log | tail -1
+```
+
+- 상태/중지: `launchctl list | grep hongseong`, `launchctl unload ~/Library/LaunchAgents/com.hongseong.tunnel.plist`
 
 ## 5. 데이터 수정
 
@@ -107,13 +125,14 @@ AI가 꺼져 있거나 느리면 자동으로 "목록에서 직접 찾기"로 �
 | "모델이 설치되지 않았습니다" | `ollama pull qwen2.5vl:7b` |
 | 판별이 60초 이상 | 더 작은 모델(`gemma3:4b`)로 변경 |
 | 스마트폰에서 카메라가 안 열림 | HTTP(내부망)에서는 사진 선택만 가능. Cloudflare Tunnel(HTTPS)로 접속 |
-| 로그 | `server.log` 또는 터미널 출력 |
+| 터널 주소로 접속이 안 됨 | `tail -20 tunnel.log` 확인, 주소가 바뀌었으면 스마트폰에서 새 주소로 다시 연결 |
+| 로그 | `server.log`, `tunnel.log`, `brew services list`, `ollama list` |
 
 ## 8. 외부 호스팅(GitHub Pages) + 맥미니 AI 조합
 
 웹페이지는 GitHub Pages(https://anterogenfree-glitch.github.io/hongseong-waste/)에 올라가 있습니다. main에 push 하면 `.github/workflows/pages.yml`이 `public/`을 `gh-pages` 브랜치로 자동 배포합니다, AI만 맥미니에서 돌릴 수도 있습니다.
 
-1. 맥미니: `npm start` 후 `cloudflared tunnel --url http://localhost:8787` → 터널 주소 확인
+1. 맥미니: `./setup-mac.sh` 가 끝날 때 출력된 터널 주소 확인 (또는 위 4번의 `grep` 명령)
 2. 스마트폰에서 사이트의 사진 입력 화면 → "서버 주소 설정"에 터널 주소를 넣고 연결(또는 주소 뒤에 `?api=터널주소`를 붙여 열기).
    예: `https://아이디.github.io/hongseong-waste/?api=https://xxxx.trycloudflare.com`
 3. 이후에는 주소 없이 열어도 저장된 AI 서버로 연결됩니다. (서버는 CORS 허용 설정됨)

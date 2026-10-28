@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- launchd: 로그인 시 Cloudflare 임시 터널 자동 실행 (무료, 계정 불필요).
+     USERNAME 과 cloudflared 경로는 install-launchd.sh 가 자동으로 바꿔 줍니다.
+     터널 주소 확인: grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' ~/hongseong-waste/tunnel.log | tail -1 -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.hongseong.tunnel</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/cloudflared</string>
+    <string>tunnel</string>
+    <string>--url</string>
+    <string>http://localhost:8787</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/USERNAME/hongseong-waste</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/Users/USERNAME/hongseong-waste/tunnel.log</string>
+  <key>StandardErrorPath</key><string>/Users/USERNAME/hongseong-waste/tunnel.log</string>
+</dict>
+</plist>
