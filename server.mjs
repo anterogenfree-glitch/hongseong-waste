@@ -49,30 +49,75 @@ function readBody(req) {
   });
 }
 
-const SCHEMA = {
+const PICK_SCHEMA = {
   type: "object",
   properties: {
     item: { type: "string" },
     alternatives: { type: "array", items: { type: "string" } },
     confidence: { type: "number" },
-    size_hint: { type: "string" },
     reason: { type: "string" }
   },
   required: ["item", "alternatives", "confidence", "reason"]
 };
+const DESCRIBE_SCHEMA = {
+  type: "object",
+  properties: {
+    object: { type: "string" },
+    kind: { type: "string" },
+    description: { type: "string" },
+    size_hint: { type: "string" }
+  },
+  required: ["object", "kind", "description", "size_hint"]
+};
 
-function buildPrompt({ mode, names, size, note }) {
+async function ollamaChat(messages, format, signal) {
+  const r = await fetch(`${OLLAMA_URL}/api/chat`, {
+    method: "POST", signal,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ model: OLLAMA_MODEL, stream: false, format, options: { temperature: 0.1 }, messages })
+  });
+  if (!r.ok) throw new Error(`ollama_${r.status}`);
+  const data = await r.json();
+  try { return JSON.parse(data.message?.content || "{}"); } catch { throw new Error("bad_json"); }
+}
+
+const norm = s => String(s || "").toLowerCase().replace(/[\s()\-·,\.›>/]/g, "");
+// "가구 › 의자 › 의자" → "의자" (빼기 앱 경로의 마지막 조각)
+const leaf = name => String(name).split("›").pop().trim();
+
+// 1단계: 목록 없이 사진 중앙의 주된 물건을 자유롭게 인식
+function describePrompt({ size, note }) {
   const sizeTxt = size && (size.w || size.h || size.d)
-    ? `사용자가 입력한 치수(cm): 가로 ${size.w || "?"} × 세로(깊이) ${size.d || "?"} × 높이 ${size.h || "?"}.` : "치수 정보 없음.";
+    ? `사용자가 입력한 치수(cm): 가로 ${size.w || "?"} × 세로(깊이) ${size.d || "?"} × 높이 ${size.h || "?"}.` : "";
+  return [
+    "이 사진은 버리려는 물건을 찍은 것입니다. 사진의 중앙에 있고 가장 크게 보이는 주된 물건 하나만 보세요.",
+    "배경이나 주변에 있는 다른 가구·물건은 무시하세요. 물건이 여러 개면 화면 가운데에 가장 가깝고 가장 큰 것 하나만 고르세요.",
+    "그 물건이 무엇인지 가장 일반적인 한국어 이름 한 단어로 답하세요. 예: 의자, 소파, 식탁, 책상, 서랍장, 옷장, 침대, 매트리스, 냉장고, 세탁기, 텔레비전, 자전거.",
+    sizeTxt, note ? `사용자 메모: ${note}` : "",
+    'JSON으로만 답하세요: {"object": 물건 이름 한 단어, "kind": "가구"|"가전"|"생활용품"|"운동·취미"|"기타", "description": 생김새·재질·용도를 한 문장(한국어), "size_hint": 사진으로 추정한 크기·인용·단수 한 줄}'
+  ].filter(Boolean).join("\n");
+}
+
+// 2단계: 인식 결과를 목록과 대조해 항목 선택 (텍스트만, 빠름)
+function pickPrompt({ mode, names, object, description }) {
+  const fallback = mode === "ppeggi" ? "상기이외품목중 쓰레기봉투에담기어려운폐기물" : "그 외 봉투에 담기 어려운 폐기물";
   const target = mode === "ppeggi" ? "빼기 앱 폐기물 분류 항목" : "홍성군 조례 대형폐기물 품목";
   return [
-    `당신은 대형폐기물 분류 도우미입니다. 사진 속 주된 물건 하나를 보고, 아래 ${target} 목록 중에서 가장 알맞은 항목 이름을 고르세요.`,
-    `반드시 목록에 있는 이름을 그대로(한 글자도 바꾸지 말고) 사용하세요. 목록에 없으면 "${mode === "ppeggi" ? "상기이외품목중 쓰레기봉투에담기어려운폐기물" : "그 외 봉투에 담기 어려운 폐기물"}"을 고르세요.`,
-    `목록: ${names.join(" | ")}`,
-    sizeTxt,
-    note ? `사용자 메모: ${note}` : "",
-    `JSON으로만 답하세요: {"item": 목록의 이름, "alternatives": 다른 후보 2개(목록 이름), "confidence": 0~1, "size_hint": 사진으로 추정한 크기·인용·단수 등 한 줄, "reason": 판단 근거 한 문장(한국어)}`
-  ].filter(Boolean).join("\n");
+    `사진 속 물건은 "${object}"로 인식되었습니다. 설명: ${description}`,
+    `아래 ${target} 목록에서 이 물건에 가장 알맞은 항목을 고르세요. 반드시 목록의 이름을 그대로(한 글자도 바꾸지 말고) 사용하세요.`,
+    `같은 뜻의 다른 이름(예: 소파=쇼파, 옷장=장농, 탁자=응접탁자, 책꽂이=책장)도 고려하세요. 목록에 알맞은 것이 전혀 없으면 "${fallback}"을 고르세요.`,
+    `목록:\n${names.join("\n")}`,
+    'JSON으로만 답하세요: {"item": 목록의 이름, "alternatives": 다른 후보 2개(목록 이름), "confidence": 0~1, "reason": 판단 근거 한 문장(한국어)}'
+  ].join("\n");
+}
+
+// 인식된 이름이 목록 항목과 정확히 같으면 모델 없이 바로 확정
+function directMatch(names, object) {
+  const o = norm(object);
+  if (!o) return null;
+  const exact = names.filter(n => norm(leaf(n)) === o || norm(n) === o);
+  if (exact.length === 1) return exact[0];
+  return null;
 }
 
 async function classify(body) {
@@ -89,21 +134,30 @@ async function classify(body) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    const r = await fetch(`${OLLAMA_URL}/api/chat`, {
-      method: "POST", signal: ctrl.signal,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        model: OLLAMA_MODEL, stream: false, format: SCHEMA,
-        options: { temperature: 0.1 },
-        messages: [{ role: "user", content: buildPrompt({ mode, names, size, note }), images: [b64] }]
-      })
-    });
-    if (!r.ok) throw new Error(`ollama_${r.status}`);
-    const data = await r.json();
-    let parsed;
-    try { parsed = JSON.parse(data.message?.content || "{}"); } catch { throw new Error("bad_json"); }
-    if (!parsed.item) throw new Error("bad_json");
-    return { ...parsed, alternatives: Array.isArray(parsed.alternatives) ? parsed.alternatives : [], model: OLLAMA_MODEL };
+    // 1단계: 사진 → 물건 이름
+    const seen = await ollamaChat([{ role: "user", content: describePrompt({ size, note }), images: [b64] }], DESCRIBE_SCHEMA, ctrl.signal);
+    const object = String(seen.object || "").trim();
+    const description = String(seen.description || "").trim();
+    if (!object) throw new Error("bad_json");
+
+    // 2단계: 이름 → 목록 항목
+    const direct = directMatch(names, object);
+    let picked;
+    if (direct) {
+      const others = names.filter(n => n !== direct && (norm(n).includes(norm(object)) || norm(object).includes(norm(leaf(n))))).slice(0, 2);
+      picked = { item: direct, alternatives: others, confidence: 0.9, reason: `사진 중앙의 물건을 "${object}"로 인식했습니다. ${description}` };
+    } else {
+      picked = await ollamaChat([{ role: "user", content: pickPrompt({ mode, names, object, description }) }], PICK_SCHEMA, ctrl.signal);
+      if (!picked.item) throw new Error("bad_json");
+      if (!names.includes(picked.item)) {
+        // 모델이 목록 이름을 살짝 바꿔 쓴 경우 보정
+        const fixed = names.find(n => norm(n) === norm(picked.item) || norm(leaf(n)) === norm(picked.item)) || names.find(n => norm(n).includes(norm(picked.item)));
+        if (fixed) picked.item = fixed;
+      }
+      picked.reason = `사진 중앙의 물건을 "${object}"로 인식했습니다. ${picked.reason || description}`;
+    }
+    return { ...picked, alternatives: Array.isArray(picked.alternatives) ? picked.alternatives.filter(n => n !== picked.item) : [],
+      size_hint: seen.size_hint || "", seen: object, model: OLLAMA_MODEL };
   } finally { clearTimeout(timer); }
 }
 
